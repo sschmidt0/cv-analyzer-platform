@@ -1,56 +1,83 @@
-from typing import Optional
+from typing import Optional, Literal
 
 from pydantic import BaseModel, Field
 
 
 class Keyword(BaseModel):
+    """A relevant keyword and whether it appears in the CV."""
+
     word: str
     found: bool
 
+SectionName = Literal["Experiencia", "Formación", "Habilidades técnicas", "Idiomas", "Diseño y formato"]
 
 class SectionScore(BaseModel):
-    section: str = Field(description="Name of the CV section (e.g. 'Experiencia', 'Formación', 'Habilidades técnicas', 'Idiomas', 'Diseño y formato')")
+    """Rubric-based score for one of the five fixed CV sections."""
+
+    section: SectionName = Field(description="Name of the CV section")
     score: int = Field(ge=0, le=10, description="Score from 0 to 10")
     comment: str = Field(description="Brief one-sentence justification of the score")
 
 
 class ToneIssue(BaseModel):
+    """A tone or wording problem found in the CV, with a suggested rewrite."""
+
     original: str = Field(description="Verbatim excerpt from the CV with the tone/language issue")
     issue: str = Field(description="Short description of the issue (e.g. 'Verbo débil', 'Voz pasiva', 'Frase genérica')")
     suggestion: str = Field(description="Corrected version of the excerpt")
 
 
 class ATSCheckItem(BaseModel):
+    """One ATS-compatibility check and whether the CV passes it."""
+
     label: str = Field(description="Evaluated aspect (e.g. 'Formato compatible', 'Sin tablas complejas')")
     passed: bool = Field(description="True if the CV meets this criterion, False otherwise")
     detail: str = Field(description="Brief explanation of the result")
 
 
 class ImprovedBullet(BaseModel):
-    section: str
+    """A CV bullet rewritten for more impact, without inventing experience."""
+
+    section: str = Field(description="Name of the CV section the bullet comes from, as it appears in the CV (e.g. 'Experiencia', 'Proyectos', 'Formación')")
     original: str
     improved: str
 
+BreakdownCategory = Literal[
+    "Experiencia relevante",
+    "Habilidades y tecnologías",
+    "Formación y certificaciones",
+    "Presentación y formato",
+]
 
 class MatchScoreBreakdown(BaseModel):
-    category: str = Field(description="Name of the evaluated category")
+    """Raw 0-100 score for one of the weighted categories that make up matchScore."""
+
+    category: BreakdownCategory = Field(description="Name of the evaluated category")
     score: int = Field(ge=0, le=100, description="RAW score from 0 to 100 for this category (not multiplied by its weight). Example: if Experience is worth 85 points, score=85, NOT score=25.")
     comment: str = Field(description="Brief one-sentence justification of the score")
 
+Status = Literal["cumple", "parcial", "no cumple"]  
 
 class GapItem(BaseModel):
+    """A job-offer requirement, how well the CV meets it, and how to close the gap."""
+
     requirement: str = Field(description="Specific requirement from the job offer (technology, experience, certification, soft skill, etc.)")
-    status: str = Field(description="Status: 'cumple' (met), 'parcial' (partial) or 'no cumple' (not met)")
+    status: Status = Field(description="Status: 'cumple' (met), 'parcial' (partial) or 'no cumple' (not met)")
     detail: str = Field(description="Evidence from the CV that justifies the status, or an explanation of why it is not met")
     advice: str = Field(description="Specific, actionable advice to close the gap (rephrase a bullet, take a course, build a personal project, etc.). If met, advice to highlight it even more.")
 
+Level = Literal["alto", "medio", "bajo"]
 
 class CompetitivenessLevel(BaseModel):
-    level: str = Field(description="Competitiveness level: 'alto' (high), 'medio' (medium) or 'bajo' (low)")
+    """Overall competitiveness of the candidate for the job offer."""
+
+    level: Level = Field(description="Competitiveness level: 'alto' (high), 'medio' (medium) or 'bajo' (low)")
     summary: str = Field(description="2-3 sentence justification addressed to the user in the informal second person singular (tú), explaining the level with the main factors for and against relative to the job offer")
 
 
 class AnalysisResult(BaseModel):
+    """Full structured analysis of a CV, optionally against a job offer. Returned by the LLM."""
+
     summary: str = Field(description="Executive summary of the candidate's professional profile")
     strengths: list[str] = Field(description="4-6 concrete strengths of the CV. Each must cite evidence from the CV (section, sentence or data point) and the best-practice criterion it meets.")
     weaknesses: list[str] = Field(description="4-6 areas for improvement in the CV. Each must state what is missing or could be improved, citing the affected section and the best-practice criterion it fails to meet.")
@@ -61,7 +88,7 @@ class AnalysisResult(BaseModel):
     offerSuggestions: list[str] = Field(description="List of 3-5 specific recommendations to tailor the CV to the provided job offer: keywords to add, experience to highlight or rephrase, sections to adjust. If there is no job offer, return an empty list [].")
     improvedBullets: list[ImprovedBullet] = Field(description="CV bullets rewritten with more impact, grouped by section (e.g. 'Experiencia', 'Formación', 'Idiomas'). Each bullet includes the section it belongs to, the original CV text and the improved version. Rely on the best practices from the knowledge base. Do not invent experience that is not in the original CV.")
     interviewQuestions: list[str] = Field(description="4-5 likely interview questions based on the profile and the job offer")
-    sectionScores: list[SectionScore] = Field(description="Score from 0 to 10 for each main CV section: Experiencia, Formación, Habilidades técnicas, Idiomas, Diseño y formato, and any other section present. Include a justifying comment.")
+    sectionScores: list[SectionScore] = Field(description="Score from 0 to 10 for each main CV section: Experiencia, Formación, Habilidades técnicas, Idiomas, Diseño y formato. Include a justifying comment.")
     toneIssues: list[ToneIssue] = Field(description="3-6 detected tone or language issues: weak verbs ('responsable de', 'participé en'), passive voice, generic phrases, filler words. Include the original excerpt, issue type and suggested improvement.")
     atsChecklist: list[ATSCheckItem] = Field(description="5-7 ATS compatibility checks: file format, use of tables/columns/images, length, standard sections, use of headings, readable typography, etc. Indicate whether the CV passes each criterion.")
     gapAnalysis: list[GapItem] = Field(description="5-8 key requirements from the job offer classified as 'cumple', 'parcial' or 'no cumple', with evidence from the CV and advice to close each gap. If there is no offer, return an empty list [].")
@@ -69,16 +96,22 @@ class AnalysisResult(BaseModel):
 
 
 class AnalyzeResponse(BaseModel):
+    """Response of the analyze endpoint: the extracted CV text and its analysis."""
+
     cv_text: str
     result: AnalysisResult
 
 
 class ChatMessage(BaseModel):
-    role: str  # "user" | "assistant"
+    """A single turn in the candidate chat history."""
+
+    role: Literal["user", "assistant"]
     content: str
 
 
 class ChatRequest(BaseModel):
+    """Chat request about a CV, with optional job offer, prior analysis and history."""
+
     message: str
     cv_text: str
     job_text: str = ""
@@ -87,4 +120,6 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    """The assistant's reply in the candidate chat."""
+
     content: str

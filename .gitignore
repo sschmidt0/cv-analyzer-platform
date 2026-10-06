@@ -1,0 +1,55 @@
+# ── Secrets / environment ─────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Python (backend) ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+.venv/
+venv/
+.python-version
+
+# Test / lint / type-check caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Generated vector store (rebuild with `python scripts/ingest.py`)
+chroma_db/
+
+# ── Node / frontend ───────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+.next/
+*.tsbuildinfo
+*.local
+coverage/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Editors / OS ──────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Claude Code local settings ────────────────────────
+.claude/settings.local.json
